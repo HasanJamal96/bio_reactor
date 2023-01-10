@@ -34,7 +34,7 @@ typedef struct {
   uint8_t         channel       = 0;
   const uint16_t  frequency     = 1000;
   const uint8_t   resolution    = 8;
-  const float     thermalPower  = 25.0;
+  const float     thermalPower  = 25.0; // depends on the material
 }heater_t;
 
 
@@ -57,24 +57,17 @@ typedef struct {
 typedef struct {
   bool            working = false;
   uint16_t        value[4]; // red, green, blue, white
-  const uint32_t  MAX_LUX = 200000; // acceptable lux to use color result
+  float           hsv[3];
+  const uint32_t  MAX_LUX = 200000; // acceptable lux to use color result if value greater than this it means lid is open
 }colot_t;
 
 
 typedef struct {
-  const uint16_t WHITE_INTERVAL_AFTER = 60000; // time in milli sec 1 * 60 * 1000 // 1 minute
-  const uint16_t UV_INTERVAL_AFTER = 300000; // time in milli sec 5 * 60 * 1000 // 5 miniute
+  const uint16_t WHITE_INTERVAL_AFTER = 60000; // time in milli sec 1 * 60 * 1000 // 1 minute // white light illumination interval
+  const uint16_t UV_INTERVAL_AFTER = 300000; // time in milli sec 5 * 60 * 1000 // 5 miniute // uv light illumination interval
   unsigned long lastWhiteOnTime;
   unsigned long lastUVOnTime;
 }led_illumination_t;
-
-
-typedef struct {
-  const uint8_t    pin         = 32;
-  bool             pullUp      = true;
-  unsigned long    lastPressed = 0;
-  button_state_t   state       = RELEASED;
-}button_t;
 
 
 typedef enum: uint8_t {
@@ -83,6 +76,7 @@ typedef enum: uint8_t {
   HEATING           = 2,  // wait for temp to read 44.5C
   COLLING           = 3,  // wait for temp to reduce to 35C
   MAINTANING_TEMP   = 4,
+  COMPLETE          = 5,
 }process_stage_t;
 
 

@@ -85,7 +85,7 @@ bool readTag() {
         #if (DEBUG_MAIN == true && DEBUG_RTD == true)
           Serial.printf("[RFID][INFO] Data read from tag: %s\n", readData);
         #endif
-        if(strcmp(readData, "tested") == 0) {
+        if(strcmp(readData, "tested") == 0 || strcmp(readData, "rejected") == 0) {
           #if (DEBUG_MAIN == true && DEBUG_RTD == true)
             Serial.printf("[RFID][INFO] Process already performed\n");
           #endif

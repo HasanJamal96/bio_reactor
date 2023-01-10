@@ -34,6 +34,45 @@ bool isLidOpen() {
     return false;
 }
 
+void rawToHSV() {
+  float r = float(color.value[0]/65535);
+  float g = float(color.value[1]/65535);
+  float b = float(color.value[2]/65535);
+  float h;
+  
+  float high = max(r, g);
+  high = max(high, b);
+  float low = min(r, g);
+  low = min(low, b);
+  color.hsv[0] = high;
+  color.hsv[1] = high;
+  color.hsv[2] = high;
+  
+  float d = high - low;
+  
+  if (high == 0)
+    color.hsv[1] = 0;
+  else
+    color.hsv[1] = d/high;
+  if (high == low)
+      color.hsv[0] = 0.0;
+  else {
+    if(high == r) {
+      h = (g - b) / d + (g < b ? 6:0);
+    }
+    else if(high == g) {
+      h = (b - r) / d+2;
+    }
+    else if(high == b) {
+      h = (r - g) / d+4;
+    }
+  }
+  h /= 6;
+  
+  color.hsv[0] = h*360.0;
+}
+
+
 bool updateColor() {
   if(!color.working) {
     return false;
@@ -48,5 +87,6 @@ bool updateColor() {
   color.value[1] = RGBWSensor.getGreen();
   color.value[2] = RGBWSensor.getBlue();
   color.value[3] = RGBWSensor.getWhite();
+  rawToHSV();
   return true;
 }

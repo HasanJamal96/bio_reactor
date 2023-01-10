@@ -1,4 +1,5 @@
 #include "config.h"
+#include "button.h"
 #include "rfidFunctions.h"
 #include "heaterFunctions.h"
 #include "temperatureFunctions.h"
@@ -7,6 +8,10 @@
 main_process_t  process;
 result_t        result;
 led_illumination_t  leds;
+
+
+Button btn(32, 25); // pin number, debounce
+
 void setup() {
 #if (DEBUG_MAIN == true)
   Serial.begin(BAUDRATE);
@@ -17,6 +22,7 @@ void setup() {
   initializeRFID();
   initializeHeater();
   initializeTemperatureSensor();
+  btn.begin();
 
   pinMode(W_LED_PIN, OUTPUT);
   pinMode(UV_LED_PIN, OUTPUT);
@@ -54,73 +60,84 @@ void ledUv(bool on) {
     digitalWrite(UV_LED_PIN, LOW);
 }
 
+bool tagFound = false;
+
 void loop() {
-  if(!process.started) {
-    if(readTag()) {
+  btn.read();
+  if(btn.pressedFor(1000)) {
+    if(!process.started)
       process.started = true;
-      process.stage = CALCULATING_TIME;
-    }   
   }
-  else {
-    if(process.stage == CALCULATING_TIME) {
-      calculateProcessTime();
+  if(process.started) {
+    if(readTag()) {
+      tagFound = true;
+      process.stage = CALCULATING_TIME;
     }
-    else if(process.stage == HEATING) {
-      float currentTemperature = getTemperature();
-      if(currentTemperature >= 44.5) {
-        process.stage = COLLING;
-        updateHeaterDuty(50);   // 20% duty cycle
+    if(tagFound) {
+      if(process.stage == CALCULATING_TIME) {
+        calculateProcessTime();
       }
-    }
-    else {
-      if(millis() - process.startTime >= process.totalTime) {
-        updateColor();
-        // calculate result
-        // result can be negative or positive based on color 
-      }
-      float tol = getTolerance();
-      float currentTemperature = getTemperature();
-      if (process.stage == COLLING) {
-        if(currentTemperature < 35 + tol && currentTemperature > 35 - tol) {
-          process.stage = MAINTANING_TEMP;
-        }
-      }
-      else if(process.stage == MAINTANING_TEMP) {
-        if(currentTemperature >= 35 + tol) {
-          stopHeater();
-        }
-        else if(currentTemperature <= 35 - tol) {
+      else if(process.stage == HEATING) {
+        float currentTemperature = getTemperature();
+        if(currentTemperature >= 44.5) {
+          process.stage = COLLING;
           updateHeaterDuty(50);   // 20% duty cycle
         }
-        unsigned long currentTime = millis();
-        if(currentTime - leds.lastWhiteOnTime >= leds.WHITE_INTERVAL_AFTER) {
-          if(isLidOpen()) {
-            // alert user
-          }
-          else {
-            ledWhite(true);
-            delay(30);
-            updateColor();
-            ledWhite(false);
-            leds.lastWhiteOnTime = currentTime;
-            // add color conditions
-          }
-        }
-        if(currentTime - leds.lastUVOnTime >= leds.UV_INTERVAL_AFTER) {
-          if(isLidOpen()) {
-            // alert user
-          }
-          else {
-            ledWhite(true);
-            delay(30);
-            updateColor();
-            ledWhite(false); 
-            leds.lastUVOnTime = currentTime;
-            // add color conditions
-          }
-        }
-        
       }
-    } 
+      else {
+        if(millis() - process.startTime >= process.totalTime) {
+          updateColor();
+          // calculate result
+          // result can be negative or positive based on color 
+        }
+        float tol = getTolerance();
+        float currentTemperature = getTemperature();
+        if (process.stage == COLLING) {
+          if(currentTemperature < 35 + tol && currentTemperature > 35 - tol) {
+            process.stage = MAINTANING_TEMP;
+          }
+        }
+        else if(process.stage == MAINTANING_TEMP) {
+          if(currentTemperature >= 35 + tol) {
+            stopHeater();
+          }
+          else if(currentTemperature <= 35 - tol) {
+            updateHeaterDuty(50);   // 20% duty cycle
+          }
+          unsigned long currentTime = millis();
+          if(currentTime - leds.lastWhiteOnTime >= leds.WHITE_INTERVAL_AFTER) {
+            if(isLidOpen()) {
+              // alert user
+            }
+            else {
+              ledWhite(true);
+              delay(30);
+              updateColor();
+              ledWhite(false);
+              leds.lastWhiteOnTime = currentTime;
+              // add color conditions
+              /*
+              check if rgb values is in between yellow or darker yellow
+              if is in range test is positive
+              */
+            }
+          }
+          if(currentTime - leds.lastUVOnTime >= leds.UV_INTERVAL_AFTER) {
+            if(isLidOpen()) {
+              // alert user
+            }
+            else {
+              ledUv(true);
+              delay(30);
+              updateColor();
+              ledUv(false); 
+              leds.lastUVOnTime = currentTime;
+              // add color conditions
+            }
+          }
+          
+        }
+      } 
+    }
   }
 }
