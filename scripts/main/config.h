@@ -4,6 +4,7 @@
 #define DEBUG_RTD     true
 #define DEBUG_CHARGE  true
 #define DEBUG_COLOR   true
+#define DEBUG_WIFI    true
 
 #if (DEBUG_MAIN == true)
   #define BAUDRATE  115200
@@ -13,6 +14,17 @@ const char *FIRMWARE_VERSION = "0.0.1";
 
 const uint8_t W_LED_PIN   = 16;
 const uint8_t UV_LED_PIN  = 12;
+
+const char* ssid = "REPLACE_WITH_YOUR_SSID";
+const char* password = "REPLACE_WITH_YOUR_PASSWORD";
+const char* serverName = "https://bactosure-dev-default-rtdb.firebaseio.com";
+
+char oldError[20];
+char newError[20];
+const char *ERROR_ENDPOINT = "/error.json?auth=8JZWaLRXmT9y4JHxqs3jjjpiQyzAkpji17qiJxma";
+const char *SUMMARY_ENDPOINT = "/summary.json?auth=8JZWaLRXmT9y4JHxqs3jjjpiQyzAkpji17qiJxma";
+const char *DETAILS_ENDPOINT = "/detail.json?auth=8JZWaLRXmT9y4JHxqs3jjjpiQyzAkpji17qiJxma";
+
 
 typedef struct {
   const uint8_t csPin     = 17;
@@ -58,6 +70,7 @@ typedef struct {
   bool            working = false;
   uint16_t        value[4]; // red, green, blue, white
   float           hsv[3];
+  uint8_t         rgb[3];
   const uint32_t  MAX_LUX = 200000; // acceptable lux to use color result if value greater than this it means lid is open
 }colot_t;
 
@@ -68,6 +81,45 @@ typedef struct {
   unsigned long lastWhiteOnTime;
   unsigned long lastUVOnTime;
 }led_illumination_t;
+
+typedef struct {
+  const uint8_t   Pins[3] = {34, 35, 26};
+  bool            errorState = false;
+  bool            flashing = false;
+  unsigned long   lastBlink = 0;
+  const uint16_t  blinkDelay = 500; // time in milli sec
+}rgb_t;
+
+
+typedef enum : uint8_t{
+  COLITAG,
+  COLILERT,
+  COLILERT18,
+}test_type_t;
+
+typedef struct {
+  const uint8_t COLITAG[2][3] = {
+                                  {175, 55, 238}, // E.Coli
+                                  {241, 235, 156} // T. Coliform
+                                };
+  const uint8_t COLILERT[2][3] = {
+                                   {175, 55, 238}, // E.Coli
+                                   {241, 235, 156} // T. Coliform
+                                 };
+  const uint8_t COLILERT18[2][3] = {
+                                     {175, 55, 238}, // E.Coli
+                                     {241, 235, 156} // T. Coliform
+                                   };
+}comparator_color_t;
+
+
+typedef struct {
+  test_type_t         sampleType = COLITAG;
+  char                sampleUUID[50];
+}sample_info_t;
+
+
+
 
 
 typedef enum: uint8_t {
@@ -83,7 +135,6 @@ typedef enum: uint8_t {
 typedef struct {
   bool              started   = false;
   process_stage_t   stage     = NONE;
-
   unsigned long     startTime = 0;
   unsigned long     totalTime = 0;
 }main_process_t;
@@ -91,4 +142,5 @@ typedef struct {
 
 typedef struct {
   bool isPositive = false;
+  String rgb[3];
 }result_t;

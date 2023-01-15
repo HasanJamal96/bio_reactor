@@ -72,6 +72,43 @@ void rawToHSV() {
   color.hsv[0] = h*360.0;
 }
 
+bool hsvToRGB() {
+  if(color.hsv[0] > 360 || color.hsv[0] < 0 || color.hsv[1] > 100 || color.hsv[1] < 0 || color.hsv[2] < 0 || color.hsv[2] > 100) {
+#if (DEBUG_MAIN == true && DEBUG_COLOR == true)
+   Serial.printf("[Color][ERROR] Invalid HSV values\n");
+#endif
+  return false;
+  }
+  float s = color.hsv[1]/100;
+  float v = color.hsv[2]/100;
+  float C = s*v;
+  float X = C*(1-abs(fmod(color.hsv[0]/60.0, 2)-1));
+  float m = v-C;
+  float r,g,b;
+  if(color.hsv[0] >= 0 && color.hsv[0] < 60){
+      r = C,g = X,b = 0;
+  }
+  else if(color.hsv[0] >= 60 && color.hsv[0] < 120){
+      r = X,g = C,b = 0;
+  }
+  else if(color.hsv[0] >= 120 && color.hsv[0] < 180){
+      r = 0,g = C,b = X;
+  }
+  else if(color.hsv[0] >= 180 && color.hsv[0] < 240){
+      r = 0,g = X,b = C;
+  }
+  else if(color.hsv[0] >= 240 && color.hsv[0] < 300){
+      r = X,g = 0,b = C;
+  }
+  else{
+      r = C,g = 0,b = X;
+  }
+  color.rgb[0] = (r+m)*255;
+  color.rgb[1] = (g+m)*255;
+  color.rgb[2] = (b+m)*255;
+  return true;
+}
+
 
 bool updateColor() {
   if(!color.working) {

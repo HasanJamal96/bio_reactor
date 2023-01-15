@@ -1,13 +1,24 @@
 #include "config.h"
+
+main_process_t      process;
+result_t            resultEC;
+result_t            resultTC;
+led_illumination_t  leds;
+
+comparator_color_t  colorComparator;
+sample_info_t       sampleInfo;
+
+
+
 #include "button.h"
 #include "rfidFunctions.h"
 #include "heaterFunctions.h"
 #include "temperatureFunctions.h"
 #include "colorSensorFunctions.h"
+#include "apiCommunication.h"
+#include "rgb.h"
 
-main_process_t  process;
-result_t        result;
-led_illumination_t  leds;
+
 
 
 Button btn(32, 25); // pin number, debounce
@@ -19,6 +30,7 @@ void setup() {
   Serial.printf("[Main][INFO] Firmware version %s\n", FIRMWARE_VERSION);
 #endif
 
+  connectToWiFi();
   initializeRFID();
   initializeHeater();
   initializeTemperatureSensor();
@@ -62,6 +74,9 @@ void ledUv(bool on) {
 
 bool tagFound = false;
 
+unsigned long lastDetailPosted = 0;
+const uint16_t detailsUpdateInterval = 60000;
+
 void loop() {
   btn.read();
   if(btn.pressedFor(1000)) {
@@ -70,6 +85,8 @@ void loop() {
   }
   if(process.started) {
     if(readTag()) {
+      resultTC.rgb[0] = resultTC.rgb[1] = resultTC.rgb[2] = 255;
+      resultEC.rgb[0] = resultEC.rgb[1] = resultEC.rgb[2] = 255;
       tagFound = true;
       process.stage = CALCULATING_TIME;
     }
@@ -90,6 +107,10 @@ void loop() {
           // calculate result
           // result can be negative or positive based on color 
         }
+        if(millis() - lastDetailPosted >= detailsUpdateInterval) {
+          sendDetails();
+          lastDetailPosted = millis();
+        }
         float tol = getTolerance();
         float currentTemperature = getTemperature();
         if (process.stage == COLLING) {
@@ -98,7 +119,21 @@ void loop() {
           }
         }
         else if(process.stage == MAINTANING_TEMP) {
-          if(currentTemperature >= 35 + tol) {
+          if(currentTemperature >= 35 + (2*tol)) {
+            strcpy(newError, "HighTemp");
+            if(strcmp(oldError, newError) != 0) {
+              strcpy(oldError, newError);
+              sendError();
+            }
+          }
+          else if(currentTemperature <= 35 - (2*tol)) {
+            strcpy(newError, "LowTemp");
+            if(strcmp(oldError, newError) != 0) {
+              strcpy(oldError, newError);
+              sendError();
+            }
+          }
+          else if(currentTemperature >= 35 + tol) {
             stopHeater();
           }
           else if(currentTemperature <= 35 - tol) {
@@ -107,7 +142,12 @@ void loop() {
           unsigned long currentTime = millis();
           if(currentTime - leds.lastWhiteOnTime >= leds.WHITE_INTERVAL_AFTER) {
             if(isLidOpen()) {
-              // alert user
+              startFlashing();
+              strcpy(newError, "LidOpen");
+              if(strcmp(oldError, newError) != 0) {
+                strcpy(oldError, newError);
+                sendError();
+              }
             }
             else {
               ledWhite(true);
@@ -124,7 +164,12 @@ void loop() {
           }
           if(currentTime - leds.lastUVOnTime >= leds.UV_INTERVAL_AFTER) {
             if(isLidOpen()) {
-              // alert user
+              startFlashing();
+              strcpy(newError, "LidOpen");
+              if(strcmp(oldError, newError) != 0) {
+                strcpy(oldError, newError);
+                sendError();
+              }
             }
             else {
               ledUv(true);
