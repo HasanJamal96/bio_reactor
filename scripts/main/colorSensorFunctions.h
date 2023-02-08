@@ -125,5 +125,5 @@ bool updateColor() {
   color.value[2] = RGBWSensor.getBlue();
   color.value[3] = RGBWSensor.getWhite();
   rawToHSV();
-  return true;
+  return hsvToRGB();
 }

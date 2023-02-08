@@ -32,9 +32,17 @@ void updateHeaterDuty(uint8_t duty) {
 }
 
 void stopHeater() {
-  updateHeaterDuty(0);
-  heater.state = false;
+  if(heater.state) {
+    updateHeaterDuty(0);
+    heater.state = false;
 #if (DEBUG_MAIN == true && DEBUG_HEATER == true)
   Serial.printf("[Heater][INFO] Stopped\n");
 #endif
+  }
+#if (DEBUG_MAIN == true && DEBUG_HEATER == true)
+  else {
+  Serial.printf("[Heater][INFO] Already stopped\n");
+#endif
+
+  }
 }

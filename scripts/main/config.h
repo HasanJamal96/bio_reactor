@@ -92,9 +92,9 @@ typedef struct {
 
 
 typedef enum : uint8_t{
-  COLITAG,
-  COLILERT,
-  COLILERT18,
+  COLITAG    = 0,
+  COLILERT   = 1,
+  COLILERT18 = 2,
 }test_type_t;
 
 typedef struct {
@@ -113,13 +113,13 @@ typedef struct {
 }comparator_color_t;
 
 
-typedef struct {
-  test_type_t         sampleType = COLITAG;
-  char                sampleUUID[50];
+typedef struct { // information provided by RFID tag
+  test_type_t sampleType = COLITAG;
+  char        sampleUUID[20];
+  char        userName[15];
+  char        lon[15];
+  char        lat[15];
 }sample_info_t;
-
-
-
 
 
 typedef enum: uint8_t {
@@ -142,5 +142,7 @@ typedef struct {
 
 typedef struct {
   bool isPositive = false;
-  String rgb[3];
+  char rgb[3];
+  unsigned long timeOfPositive;
+  
 }result_t;
